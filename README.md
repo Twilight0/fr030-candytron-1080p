@@ -43,4 +43,25 @@ Instead, **800×600 (4:3) exclusive fullscreen** is hardcoded in two places:
 
 To produce `fr030-candytron-final-101-1080p.exe`:
 - The `kkrunchy`-decompressed image (`0x410000`–`0x441000`) was dumped at the OEP and rebuilt into a standard, unpacked PE32 binary with a valid `.idata` import directory (`WINMM.dll`, `KERNEL32.dll`, `USER32.dll`, `GDI32.dll`).
-- All four hardcoded resolution immediates (`0x4111d5`, `0x4111da`, `0x4119e2`, `0x4119e7`) were patched from `800×600` (`0x320 × 0x258`) to `1920×1080` (`0x780 × 0x438`).
+- All four hardcoded resolution immediates (`0x4111d5`, `0x4111da`, `0x4119e2`, `0x4119e7` — file offsets `0x21d5`, `0x21da`, `0x29e2`, `0x29e7` in the unpacked binary) were patched from `800×600` (`0x320 × 0x258`) to `1920×1080` (`0x780 × 0x438`).
+
+---
+
+## Repatching to Other Resolutions (4K, 1440p, etc.)
+
+Because `fr030-candytron-final-101-1080p.exe` is already unpacked, you can repatch it to any resolution (including **4K 3840×2160**) using the included [`patch_resolution.py`](patch_resolution.py) script (Python 3, no external dependencies):
+
+```bash
+# 4K (3840x2160)
+python3 patch_resolution.py fr030-candytron-final-101-1080p.exe 3840 2160 -o fr030-candytron-4k.exe
+
+# 1440p (2560x1440)
+python3 patch_resolution.py fr030-candytron-final-101-1080p.exe 2560 1440 -o fr030-candytron-1440p.exe
+```
+
+The script verifies the surrounding x86 opcodes (`push` / `mov`) before writing the new little-endian `uint32` width and height values at:
+- `0x21d5` (`0x4111d5`): `CreateWindowExA` `nHeight`
+- `0x21da` (`0x4111da`): `CreateWindowExA` `nWidth`
+- `0x29e2` (`0x4119e2`): `D3DPRESENT_PARAMETERS.BackBufferWidth`
+- `0x29e7` (`0x4119e7`): `D3DPRESENT_PARAMETERS.BackBufferHeight`
+
